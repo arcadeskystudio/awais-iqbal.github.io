@@ -313,10 +313,7 @@ footer{background:var(--bg);border-top:1px solid var(--border);padding:1.8rem 6%
 .saving-bar.ok{border-color:var(--success);color:var(--success)}
 .saving-bar.err{border-color:var(--warning);color:var(--warning)}
 
-/* LOAD OVERLAY */
-#load-overlay{position:fixed;inset:0;background:var(--bg);z-index:5000;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.load-spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+
 
 /* SETTINGS BIN ID */
 .bin-id-box{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.5rem .9rem;font-size:.78rem;color:var(--text2);word-break:break-all;margin-top:.5rem}
@@ -816,33 +813,7 @@ async function save(){
   }
 }
 
-async function loadFromCloud(){
-  // always load localStorage first (instant)
-  try{const s=localStorage.getItem('pf_data');if(s)DATA=JSON.parse(s);}catch(e){}
-  if(!BIN_ID){console.log('No Bin ID — using local data');return;}
-  try{
-    const controller=new AbortController();
-    const t=setTimeout(()=>controller.abort(),4000);
-    const res=await fetch(JSONBIN_URL+'/'+BIN_ID+'/latest',{
-      headers:{'X-Master-Key':JSONBIN_KEY,'X-Bin-Meta':'false'},
-      signal:controller.signal
-    });
-    clearTimeout(t);
-    if(!res.ok)throw new Error('JSONBin '+res.status);
-    const json=await res.json();
-    DATA=json.record||json;
-    // make sure essential arrays exist
-    if(!DATA.projects)DATA.projects=[];
-    if(!DATA.skills)DATA.skills=[];
-    if(!DATA.experiences)DATA.experiences=[];
-    if(!DATA.education)DATA.education=[];
-    if(!DATA.about)DATA.about={};
-    localStorage.setItem('pf_data',JSON.stringify(DATA));
-    console.log('✅ Loaded from cloud');
-  }catch(e){
-    console.warn('Cloud load failed, using local data:',e.message);
-  }
-}
+// loadFromCloud inlined in init
 
 function showSaving(on,err){
   let el=document.getElementById('saving-indicator');
@@ -951,29 +922,38 @@ function renderAbout(){
 
 function renderAll(){renderAbout();renderPortfolio();renderSkills();renderExperience();renderEducation()}
 
-// ── INIT: load from cloud then render ──
-(async function init(){
-  const ov=document.createElement('div');
-  ov.id='load-overlay';
-  ov.innerHTML='<div class="load-spinner"></div><div style="margin-top:1rem;font-size:.9rem;color:var(--text2)">Loading portfolio…</div>';
-  document.body.appendChild(ov);
-  // always remove overlay after 5 seconds max
-  const safetyTimer=setTimeout(()=>{
-    console.warn('Load timeout — showing site with local data');
-    ov.remove();
-  },5000);
+// ── INIT ──
+// 1. Render immediately with localStorage data (instant)
+(function(){
+  try{const s=localStorage.getItem('pf_data');if(s)DATA=JSON.parse(s);}catch(e){}
+})();
+renderAll();
+
+// 2. Then silently try to refresh from cloud in background
+(async function syncFromCloud(){
+  if(!BIN_ID)return;
   try{
-    await Promise.race([
-      loadFromCloud(),
-      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),4500))
-    ]);
+    const controller=new AbortController();
+    setTimeout(()=>controller.abort(),5000);
+    const res=await fetch(JSONBIN_URL+'/'+BIN_ID+'/latest',{
+      headers:{'X-Master-Key':JSONBIN_KEY,'X-Bin-Meta':'false'},
+      signal:controller.signal
+    });
+    if(!res.ok)throw new Error('JSONBin '+res.status);
+    const json=await res.json();
+    const fresh=json.record||json;
+    if(!fresh.projects)fresh.projects=[];
+    if(!fresh.skills)fresh.skills=[];
+    if(!fresh.experiences)fresh.experiences=[];
+    if(!fresh.education)fresh.education=[];
+    if(!fresh.about)fresh.about={};
+    DATA=fresh;
+    localStorage.setItem('pf_data',JSON.stringify(DATA));
+    renderAll();
+    console.log('✅ Synced from cloud');
   }catch(e){
-    console.warn('Cloud load timed out or failed:',e.message);
-    try{const s=localStorage.getItem('pf_data');if(s)DATA=JSON.parse(s);}catch(e2){}
+    console.warn('Cloud sync skipped:',e.message);
   }
-  clearTimeout(safetyTimer);
-  renderAll();
-  if(ov.parentNode)ov.remove();
 })();
 
 // DASHBOARD
