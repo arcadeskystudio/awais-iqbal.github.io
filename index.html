@@ -761,7 +761,11 @@ footer{background:var(--bg);border-top:1px solid var(--border);padding:1.8rem 6%
 
 <script>
 // DATA
-let DATA={education:[],experiences:[],about:{name:'Your Name',title:'Developer',bio:'A passionate developer crafting beautiful digital experiences.',about:'Add your full bio from the dashboard.',email:'your@email.com',phone:'+44 000 000 0000',location:'London, UK',exp:'2+',avail:'Yes',photo:'',linkedin:'',github:'',twitter:'',herotag:'Available for Hire'},projects:[],skills:[],password:'admin123'};
+const DEFAULT_DATA={
+  education:[],experiences:[],projects:[],skills:[],password:'admin123',
+  about:{name:'Your Name',title:'Developer',bio:'A passionate developer crafting beautiful digital experiences.',about:'Add your full bio from the dashboard.',email:'your@email.com',phone:'+44 000 000 0000',location:'London, UK',exp:'2+',avail:'Yes',photo:'',linkedin:'',github:'',twitter:'',herotag:'Available for Hire'}
+};
+let DATA=JSON.parse(JSON.stringify(DEFAULT_DATA));
 function load(){try{const s=localStorage.getItem('pf_data');if(s)DATA=JSON.parse(s)}catch(e){}}
 
 // ── CLOUD CONFIG ──
@@ -886,6 +890,11 @@ function renderSkills(){
 
 // RENDER ABOUT
 function renderAbout(){
+  if(!DATA.about)DATA.about=JSON.parse(JSON.stringify(DEFAULT_DATA.about));
+  if(!DATA.projects)DATA.projects=[];
+  if(!DATA.skills)DATA.skills=[];
+  if(!DATA.experiences)DATA.experiences=[];
+  if(!DATA.education)DATA.education=[];
   const a=DATA.about;
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v||''};
   set('hero-name',a.name||'Your Name');
