@@ -766,6 +766,7 @@ const DEFAULT_DATA={
   about:{name:'Your Name',title:'Developer',bio:'A passionate developer crafting beautiful digital experiences.',about:'Add your full bio from the dashboard.',email:'your@email.com',phone:'+44 000 000 0000',location:'London, UK',exp:'2+',avail:'Yes',photo:'',linkedin:'',github:'',twitter:'',herotag:'Available for Hire'}
 };
 let DATA=JSON.parse(JSON.stringify(DEFAULT_DATA));
+const MONTHS=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function load(){try{const s=localStorage.getItem('pf_data');if(s)DATA=JSON.parse(s)}catch(e){}}
 
 // ── CLOUD CONFIG ──
@@ -1291,7 +1292,6 @@ function saveEdu(){
 }
 
 // EXPERIENCE
-const MONTHS=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function fmtMonth(m){const n=parseInt(m);return n&&MONTHS[n]?MONTHS[n]:''}
 function fmtPeriod(e){
   const from=e.fromM&&e.fromY?fmtMonth(e.fromM)+' '+e.fromY:'';
